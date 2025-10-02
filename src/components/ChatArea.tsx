@@ -1,87 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Share, HelpCircle, Paperclip, Brain, Image, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { Message } from "@/hooks/useChatHistory";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
+interface ChatAreaProps {
+  messages: Message[];
+  onSendMessage: (message: string) => Promise<void>;
+  isLoading: boolean;
+  onActionClick: (action: "reasoning" | "image" | "research") => void;
 }
 
-const ChatArea = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatArea = ({ messages, onSendMessage, isLoading, onActionClick }: ChatAreaProps) => {
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  const sendMessageToN8n = async (message: string) => {
-    // Remplacez cette URL par votre webhook n8n
-    const n8nWebhookUrl = "YOUR_N8N_WEBHOOK_URL_HERE";
-    
-    try {
-      const response = await fetch(n8nWebhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: message,
-          timestamp: new Date().toISOString(),
-          context: "health_advice",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to connect to n8n");
-      }
-
-      const data = await response.json();
-      return data.response || "Je suis là pour vous aider avec vos questions de santé.";
-    } catch (error) {
-      console.error("Error connecting to n8n:", error);
-      toast({
-        title: "Erreur de connexion",
-        description: "Impossible de se connecter au chatbot. Veuillez vérifier la configuration n8n.",
-        variant: "destructive",
-      });
-      return "Désolé, je rencontre des difficultés techniques. Veuillez réessayer.";
-    }
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputValue,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    
+    await onSendMessage(inputValue);
     setInputValue("");
-    setIsLoading(true);
-
-    try {
-      const aiResponse = await sendMessageToN8n(inputValue);
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: aiResponse,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -89,6 +29,14 @@ const ChatArea = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleActionClick = (action: "reasoning" | "image" | "research") => {
+    onActionClick(action);
+    toast({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} Mode`,
+      description: `Mode ${action} activé. Envoyez votre message.`,
+    });
   };
 
   return (
@@ -139,7 +87,7 @@ const ChatArea = () => {
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 </div>
               </div>
             ))}
@@ -186,6 +134,7 @@ const ChatArea = () => {
           <div className="flex items-center justify-center gap-4">
             <Button
               variant="outline"
+              onClick={() => handleActionClick("reasoning")}
               className="gap-2 transition-smooth hover:border-primary hover:text-primary hover:scale-105"
             >
               <Brain className="w-4 h-4" />
@@ -193,6 +142,7 @@ const ChatArea = () => {
             </Button>
             <Button
               variant="outline"
+              onClick={() => handleActionClick("image")}
               className="gap-2 transition-smooth hover:border-primary hover:text-primary hover:scale-105"
             >
               <Image className="w-4 h-4" />
@@ -200,6 +150,7 @@ const ChatArea = () => {
             </Button>
             <Button
               variant="outline"
+              onClick={() => handleActionClick("research")}
               className="gap-2 transition-smooth hover:border-primary hover:text-primary hover:scale-105"
             >
               <Search className="w-4 h-4" />
