@@ -1,0 +1,49 @@
+{
+  "name": "BeeBot Chat Minimal",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "4c0e5d95-ca09-49b7-8e80-5f9cdd9415af",
+        "options": {}
+      },
+      "id": "chat-trigger-1",
+      "name": "Chat Trigger",
+      "type": "n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "4c0e5d95-ca09-49b7-8e80-5f9cdd9415af"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupère le message de l'utilisateur\nconst userMessage = $input.item.json.chatInput || $input.item.json.message || 'Bonjour';\n\n// Crée une réponse simple\nconst response = `Bonjour! 👋 Vous avez dit: \"${userMessage}\". Comment puis-je vous aider aujourd'hui?`;\n\n// Retourne la réponse au format attendu\nreturn {\n  output: response\n};"
+      },
+      "id": "code-1",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-02T10:36:00.000Z",
+  "versionId": "1"
+}

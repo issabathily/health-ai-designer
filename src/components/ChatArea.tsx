@@ -66,12 +66,6 @@ const ChatArea = ({ messages, onSendMessage, isLoading, onActionClick }: ChatAre
               <div className="absolute inset-0 w-32 h-32 rounded-full gradient-orb animate-pulse-glow blur-xl" />
             </div>
             
-            <h2 className="text-4xl font-bold text-center mb-2 text-foreground">
-              Good Morning, Judha
-            </h2>
-            <p className="text-4xl font-bold text-center">
-              How Can I <span className="text-primary">Assist You Today?</span>
-            </p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-8 px-6 space-y-6">

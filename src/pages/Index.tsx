@@ -1,8 +1,8 @@
 import { useState } from "react";
-import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import { useChatHistory, Message } from "@/hooks/useChatHistory";
 import { useToast } from "@/hooks/use-toast";
+import { sendMessageToWebhook } from "@/services/chatService";
 
 const Index = () => {
   const {
@@ -16,34 +16,26 @@ const Index = () => {
   } = useChatHistory();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [currentMode, setCurrentMode] = useState<"reasoning" | "image" | "research" | null>(null);
   const { toast } = useToast();
 
   const sendMessageToN8n = async (message: string, mode: string | null) => {
-    // Remplacez cette URL par votre webhook n8n
-    const n8nWebhookUrl = "YOUR_N8N_WEBHOOK_URL_HERE";
-    
     try {
-      const response = await fetch(n8nWebhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: message,
-          mode: mode || "chat",
-          timestamp: new Date().toISOString(),
-          context: "health_advice",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to connect to n8n");
+      // Délègue l'appel au service centralisé (gère timeouts, parse robust, messages d'erreur)
+      const result = await sendMessageToWebhook(message);
+      if (result.error) {
+        throw new Error(result.error);
       }
-
-      const data = await response.json();
-      return data.response || "Je suis là pour vous aider avec vos questions de santé.";
+      const aiText = (result.output || "").toString();
+      
+      // Évite d'écho le message utilisateur
+      const userNorm = message.trim().toLowerCase();
+      const aiNorm = aiText.trim().toLowerCase();
+      const nearEcho = aiNorm === userNorm || (aiNorm.includes(userNorm) && Math.abs(aiNorm.length - userNorm.length) <= 10);
+      if (!aiText || nearEcho) {
+        return "J'ai bien reçu votre message. Le serveur n8n n'a pas renvoyé de réponse exploitable. Vérifiez votre workflow pour retourner un champ `output` (ou `response`).";
+      }
+      return aiText;
     } catch (error) {
       console.error("Error connecting to n8n:", error);
       
@@ -56,7 +48,7 @@ const Index = () => {
         return "Mode Deep Research activé. Je vais effectuer une recherche approfondie sur votre sujet.";
       }
       
-      return "Je suis votre assistant santé. Posez-moi vos questions sur la santé et le bien-être.";
+      return "Désolé, je ne peux pas me connecter au serveur n8n pour le moment. Veuillez vérifier que n8n est en cours d'exécution sur http://localhost:5678";
     }
   };
 
@@ -126,15 +118,6 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
-        onDeleteConversation={handleDeleteConversation}
-        onNewConversation={handleNewConversation}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
       <ChatArea
         messages={messages}
         onSendMessage={handleSendMessage}
